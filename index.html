@@ -2,6 +2,30 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<script>
+/* ВРЕМЕННЫЙ ДИАГНОСТИЧЕСКИЙ БЛОК: если где-то ниже упадёт ошибка до того,
+   как отрисуется интерфейс, вместо белого экрана покажем текст ошибки.
+   Это НЕ часть обычной логики приложения — просто чтобы найти баг. */
+(function(){
+  function showErr(msg){
+    var box = document.getElementById('__diagErr');
+    if(!box){
+      box = document.createElement('div');
+      box.id = '__diagErr';
+      box.style.cssText = 'position:fixed;inset:0;background:#1a0000;color:#ffb3b3;'
+        + 'font:13px/1.5 monospace;padding:16px;z-index:999999;overflow:auto;white-space:pre-wrap;';
+      document.documentElement.appendChild(box);
+    }
+    box.textContent += msg + '\n\n';
+  }
+  window.addEventListener('error', function(e){
+    showErr('JS ERROR: ' + (e.message || e) + '\nat ' + (e.filename||'') + ':' + (e.lineno||'') + ':' + (e.colno||''));
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    showErr('PROMISE REJECTION: ' + (e.reason && (e.reason.stack || e.reason.message || e.reason)));
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>Склад</title>
 <link id="faviconLink" rel="icon" type="image/svg+xml" href="">
@@ -1701,6 +1725,7 @@ function bindProfileEvents(){
 
 /* ============================= INIT ============================= */
 (async function init(){
+ try{
   render(); // интерфейс рисуется сразу, до и независимо от Firebase
   await initFirebase(); // ждёт максимум ~8с (2 обязательных файла по 4с), либо отвечает раньше
   await fbPull();
@@ -1711,6 +1736,12 @@ function bindProfileEvents(){
   if(session && typeof Notification !== 'undefined' && Notification.permission === 'granted'){
     registerPushForCurrentUser();
   }
+ }catch(e){
+  var box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;background:#1a0000;color:#ffb3b3;font:13px/1.5 monospace;padding:16px;z-index:999999;overflow:auto;white-space:pre-wrap;';
+  box.textContent = 'INIT ERROR: ' + (e && (e.stack || e.message || e));
+  document.documentElement.appendChild(box);
+ }
 })();
 </script>
 </body>
